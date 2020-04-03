@@ -12,6 +12,7 @@ library(tidyverse)
 library(readxl)
 library(janitor)
 library(tm)
+library(writexl)
 
 # Read in fourth grade reading scores by state and year, keeping only
 # observation rows
@@ -169,11 +170,15 @@ naep <- fourth %>%
 ## Race
 
 fourth_reading_race <- read_xlsx(path = "raw-data/fourth_reading_race.xlsx",
-                            skip = 7, n_max = 531) %>%
+                            skip = 7) %>%
   
   # Make column names easy to use, so that there are no spaces
   
   clean_names() %>%
+    
+  # Remove NA observations
+  
+  filter(!is.na(year)) %>% 
   
   # Replace symbols with NA
   
@@ -197,11 +202,15 @@ fourth_reading_race <- read_xlsx(path = "raw-data/fourth_reading_race.xlsx",
 ## Ethnicity
 
 fourth_reading_ethn <- read_xlsx(path = "raw-data/fourth_reading_ethn.xlsx",
-                         skip = 7, n_max = 531) %>%
+                         skip = 7) %>%
   
   # Make column names easy to use, so that there are no spaces
 
   clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year)) %>%
   
   # Replace symbols with NA
   
@@ -225,11 +234,15 @@ fourth_reading_ethn <- read_xlsx(path = "raw-data/fourth_reading_ethn.xlsx",
 ## Gender
 
 fourth_reading_gender <- read_xlsx(path = "raw-data/fourth_reading_gender.xlsx",
-                            skip = 7, n_max = 531) %>%
+                            skip = 7) %>%
   
   # Make column names easy to use, so that there are no spaces
   
   clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year)) %>%
   
   # Replace symbols with NA
   
@@ -250,11 +263,15 @@ fourth_reading_gender <- read_xlsx(path = "raw-data/fourth_reading_gender.xlsx",
 # observation rows
 
 fourth_reading_lunch <- read_xlsx(path = "raw-data/fourth_reading_lunch.xlsx",
-                         skip = 7, n_max = 531) %>%
+                         skip = 7) %>%
   
   # Make column names easy to use, so that there are no spaces
 
   clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year)) %>%
   
   # Replace symbols with NA
   
@@ -295,11 +312,15 @@ fourth_reading_sub <- fourth_reading_race %>%
 ## Race
 
 fourth_math_race <- read_xlsx(path = "raw-data/fourth_math_race.xlsx",
-                            skip = 7, n_max = 531) %>%
+                            skip = 7) %>%
   
   # Make column names easy to use, so that there are no spaces
   
   clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year)) %>%
   
   # Replace symbols with NA
   
@@ -323,11 +344,15 @@ fourth_math_race <- read_xlsx(path = "raw-data/fourth_math_race.xlsx",
 ## Ethnicity
 
 fourth_math_ethn <- read_xlsx(path = "raw-data/fourth_math_ethn.xlsx",
-                         skip = 7, n_max = 531) %>%
+                         skip = 7) %>%
   
   # Make column names easy to use, so that there are no spaces
 
   clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year)) %>%
   
   # Replace symbols with NA
   
@@ -351,11 +376,15 @@ fourth_math_ethn <- read_xlsx(path = "raw-data/fourth_math_ethn.xlsx",
 ## Gender
 
 fourth_math_gender <- read_xlsx(path = "raw-data/fourth_math_gender.xlsx",
-                            skip = 7, n_max = 531) %>%
+                            skip = 7) %>%
   
   # Make column names easy to use, so that there are no spaces
   
   clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year)) %>%
   
   # Replace symbols with NA
   
@@ -381,6 +410,10 @@ fourth_math_lunch <- read_xlsx(path = "raw-data/fourth_math_lunch.xlsx",
   # Make column names easy to use, so that there are no spaces
 
   clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year)) %>%
   
   # Replace symbols with NA
   
@@ -421,11 +454,15 @@ fourth_math_sub <- fourth_math_race %>%
 ## Race
 
 eighth_reading_race <- read_xlsx(path = "raw-data/eighth_reading_race.xlsx",
-                            skip = 7, n_max = 531) %>%
+                            skip = 7) %>%
   
   # Make column names easy to use, so that there are no spaces
   
   clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year)) %>%
   
   # Replace symbols with NA
   
@@ -449,11 +486,15 @@ eighth_reading_race <- read_xlsx(path = "raw-data/eighth_reading_race.xlsx",
 ## Ethnicity
 
 eighth_reading_ethn <- read_xlsx(path = "raw-data/eighth_reading_ethn.xlsx",
-                         skip = 7, n_max = 531) %>%
+                         skip = 7) %>%
   
   # Make column names easy to use, so that there are no spaces
 
   clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year)) %>%
   
   # Replace symbols with NA
   
@@ -477,11 +518,15 @@ eighth_reading_ethn <- read_xlsx(path = "raw-data/eighth_reading_ethn.xlsx",
 ## Gender
 
 eighth_reading_gender <- read_xlsx(path = "raw-data/eighth_reading_gender.xlsx",
-                            skip = 7, n_max = 531) %>%
+                            skip = 7) %>%
   
   # Make column names easy to use, so that there are no spaces
   
   clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year)) %>%
   
   # Replace symbols with NA
   
@@ -501,11 +546,15 @@ eighth_reading_gender <- read_xlsx(path = "raw-data/eighth_reading_gender.xlsx",
 ## Lunch
 
 eighth_reading_lunch <- read_xlsx(path = "raw-data/eighth_reading_lunch.xlsx",
-                         skip = 7, n_max = 531) %>%
+                         skip = 7) %>%
   
   # Make column names easy to use, so that there are no spaces
 
   clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year)) %>%
   
   # Replace symbols with NA
   
@@ -546,11 +595,15 @@ eighth_reading_sub <- eighth_reading_race %>%
 ## Race
 
 eighth_math_race <- read_xlsx(path = "raw-data/eighth_math_race.xlsx",
-                            skip = 7, n_max = 531) %>%
+                            skip = 7) %>%
   
   # Make column names easy to use, so that there are no spaces
   
   clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year)) %>%
   
   # Replace symbols with NA
   
@@ -574,11 +627,15 @@ eighth_math_race <- read_xlsx(path = "raw-data/eighth_math_race.xlsx",
 ## Ethnicity
 
 eighth_math_ethn <- read_xlsx(path = "raw-data/eighth_math_ethn.xlsx",
-                         skip = 7, n_max = 531) %>%
+                         skip = 7) %>%
   
   # Make column names easy to use, so that there are no spaces
 
   clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year)) %>%
   
   # Replace symbols with NA
   
@@ -602,11 +659,15 @@ eighth_math_ethn <- read_xlsx(path = "raw-data/eighth_math_ethn.xlsx",
 ## Gender
 
 eighth_math_gender <- read_xlsx(path = "raw-data/eighth_math_gender.xlsx",
-                            skip = 7, n_max = 531) %>%
+                            skip = 7) %>%
   
   # Make column names easy to use, so that there are no spaces
   
   clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year)) %>%
   
   # Replace symbols with NA
   
@@ -627,11 +688,15 @@ eighth_math_gender <- read_xlsx(path = "raw-data/eighth_math_gender.xlsx",
 # observation rows
 
 eighth_math_lunch <- read_xlsx(path = "raw-data/eighth_math_lunch.xlsx",
-                         skip = 7, n_max = 531) %>%
+                         skip = 7) %>%
   
   # Make column names easy to use, so that there are no spaces
 
   clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year)) %>%
   
   # Replace symbols with NA
   
@@ -699,20 +764,47 @@ naep_sub <- fourth_sub %>%
   select(-score, everything())
 ```
 
+```{r}
+## Save datasets into a single file 
+write_xlsx(naep_sub, path = "shiny/naep_sub.xlsx")
+write_xlsx(naep, path = "shiny/naep.xlsx")
+```
 
 ## Data Visualization
 
 ```{r, echo = FALSE}
 naep %>% 
   filter(jurisdiction == "California") %>% 
-  ggplot(., aes(year, score, color = test_type)) + geom_point() +
-  geom_vline(xintercept = 2010) + geom_path() +
+  ggplot(., aes(year, score, color = test_type)) + 
+  geom_point() +
+  geom_vline(xintercept = 2010) + 
+  geom_path() +
   labs(x = "Year",
        y = "Average Test Score",
        title = "California Scores Before and After \n Common Core Implementation in 2010",
        color = "grade and subject")
+
+ggsave("plot1.png", plot = last_plot(), path = "shiny")
+
 ```
 
+
+```{r, echo = FALSE}
+naep_sub %>% 
+  filter(jurisdiction == "California" & !is.na(race) & !is.na(score)) %>% 
+  ggplot(., aes(year, score, color = race)) + 
+  geom_point() +
+  facet_wrap(vars(test_type)) +
+  geom_vline(xintercept = 2010) + 
+  geom_path() +
+  labs(x = "Year",
+       y = "Average Test Score",
+       title = "California Scores Before and After \n Common Core Implementation in 2010 by Race",
+       color = "Race")
+
+
+ggsave("plot2.png", plot = last_plot(), path = "shiny")
+```
 
 ## Background
 The goal of this project is to determine how implementation of the common core
@@ -724,7 +816,6 @@ their state standardized tests to allow for teachers' teaching to the test.
 To avoid this bias, I am using National Assessment of Educational Progress data
 which includes average student test scores by states on national standardized
 exams.
-
 
 ## Data
 The data from this project is from nce.ed.gov and nationsreportcard.gov, which 
