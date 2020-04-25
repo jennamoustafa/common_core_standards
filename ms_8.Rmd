@@ -1,0 +1,894 @@
+---
+title: "Milestone 8"
+author: "Jenna Moustafa"
+date: "4/24/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(digits = 15)
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(tm)
+library(writexl)
+library(broom)
+library(gt)
+
+# Read in fourth grade reading scores by state and year, keeping only
+# observation rows
+
+fourth_reading <- read_xlsx(path = "raw-data/fourth_reading_naep.xlsx",
+                            skip = 7, n_max = 531) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+  
+  clean_names() %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "fourth") %>%
+  mutate(subject = "reading") %>% 
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "average_scale_score")
+
+# Read in fourth grade math scores by state and year, keeping only
+# observation rows
+
+fourth_math <- read_xlsx(path = "raw-data/fourth_math_naep.xlsx",
+                         skip = 7, n_max = 531) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+
+  clean_names() %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "fourth") %>%
+  mutate(subject = "math") %>% 
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "average_scale_score")
+
+# Read in eighth grade reading scores by state and year, keeping only
+# observation rows
+
+eighth_reading <- read_xlsx(path = "raw-data/eighth_reading_naep.xlsx",
+                            skip = 7, n_max = 531) %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Make column names easy to use, so that there are no spaces
+  
+  clean_names() %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "eighth") %>%
+  mutate(subject = "reading") %>% 
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "average_scale_score")
+
+# Read in eighth grade math scores by state and year, keeping only
+# observation rows
+
+eighth_math <- read_xlsx(path = "raw-data/eighth_math_naep.xlsx",
+                         skip = 7, n_max = 531) %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Make column names easy to use, so that there are no spaces
+  
+  clean_names() %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "eighth") %>%
+  mutate(subject = "math") %>%
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "average_scale_score")
+
+# Read in high school graduation rates by state and year, keeping only
+# observation rows for years graduating years 2011, 2012, and 2013
+# replacing dash with NA, and renaming columns so they are not just numeric
+
+grad_rate_2011_2013 <- read_excel("raw-data/grad_rate_2011_2013.xlsx",
+                                  col_names = c("state", "grad_2011",
+                                                "grad_2012", "notes",
+                                                "grad_2013"),
+                                  na = "—", skip = 5, n_max = 52) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+  
+  clean_names() %>%
+  
+  # Remove column with useless info
+  
+  select("state", "grad_2011", "grad_2012", "grad_2013") %>% 
+  
+  # Fix state cells that have numbers included from footnotes
+  
+  mutate(state = removeNumbers(state))
+```
+
+```{r, echo = FALSE}
+# Join fourth grade reading and math scores together so that each table is on 
+# top of each other
+fourth <- fourth_reading %>% 
+  full_join(fourth_math, by = c("year", "jurisdiction", "grade", "subject",
+                                "average_scale_score"))
+
+# Join eighth grade reading and math scores together so that each table is on 
+# top of each other
+
+eighth <- eighth_reading %>% 
+  full_join(eighth_math, by = c("year", "jurisdiction", "grade", "subject",
+                                "average_scale_score"))
+
+# Join eighth grade and fourth grade scores together so that all tables are on 
+# top of each other
+
+naep <- fourth %>% 
+  full_join(eighth,  by = c("year", "jurisdiction", "grade", "subject",
+                                "average_scale_score")) %>% 
+  mutate(score = as.numeric(average_scale_score)) %>% 
+  mutate(test_type = case_when(grade == "fourth" &
+                                 subject == "reading" ~ "fourth reading",
+                               grade == "fourth" &
+                                 subject == "math" ~ "fourth math",
+                               grade == "eighth" &
+                                 subject == "reading" ~ "eighth reading",
+                               grade == "eighth" &
+                                 subject == "math" ~ "eighth math")) %>% 
+  mutate(cc_implementation = case_when(jurisdiction == "Alabama" ~ 2013,
+                             jurisdiction == "Arizona" ~ 2013,
+                             jurisdiction == "Arkansas" ~ 2013,
+                             jurisdiction == "California" ~ 2014,
+                             jurisdiction == "Colorado" ~ 2013,
+                             jurisdiction == "Connecticut" ~ 2013,
+                             jurisdiction == "Delaware" ~ 2012,
+                             jurisdiction == "Georgia" ~ 2014,
+                             jurisdiction == "Hawaii" ~ 2013,
+                             jurisdiction == "Idaho" ~ 2013,
+                             jurisdiction == "Illinois" ~ 2013,
+                             jurisdiction == "Iowa" ~ 2012,
+                             jurisdiction == "Kansas" ~ 2013,
+                             jurisdiction == "Kentucky" ~ 2011,
+                             jurisdiction == "Louisiana" ~ 2013,
+                             jurisdiction == "Maine" ~ 2012,
+                             jurisdiction == "Maryland" ~ 2013,
+                             jurisdiction == "Massachusetts" ~ 2013,
+                             jurisdiction == "Michigan" ~ 2012,
+                             jurisdiction == "Mississippi" ~ 2013,
+                             jurisdiction == "Missouri" ~ 2014,
+                             jurisdiction == "Montana" ~ 2013,
+                             jurisdiction == "New Hampshire" ~ 2014,
+                             jurisdiction == "New Jersey" ~ 2013,
+                             jurisdiction == "New Mexico" ~ 2013,
+                             jurisdiction == "New York" ~ 2013,
+                             jurisdiction == "North Carolina" ~ 2012,
+                             jurisdiction == "North Dakota" ~ 2013,
+                             jurisdiction == "Ohio" ~ 2013,
+                             jurisdiction == "Oregon" ~ 2014,
+                             jurisdiction == "Pennsylvania" ~ 2013,
+                             jurisdiction == "Rhode Island" ~ 2013,
+                             jurisdiction == "South Dakota" ~ 2014,
+                             jurisdiction == "Tennessee" ~ 2013,
+                             jurisdiction == "Utah" ~ 2013,
+                             jurisdiction == "Vermont" ~ 2013,
+                             jurisdiction == "Washington" ~ 2014,
+                             jurisdiction == "West Virginia" ~ 2014,
+                             jurisdiction == "Wisconsin" ~ 2013,
+                             jurisdiction == "Wyoming" ~ 2014),
+         treat_year = ifelse(year < cc_implementation, 0, 1),
+         treat_year = replace_na(treat_year, 0),
+         test_type = case_when(test_type == "fourth reading" ~ "Fourth Grade Reading",
+                               test_type == "eighth reading" ~ "Eighth Grade Reading",
+                               test_type == "fourth math" ~ "Fourth Grade Math",
+                               test_type == "eighth math" ~ "Eighth Grade Math"))
+```
+
+```{r}
+### Repeat above steps for subgroups in each grade and subject
+## Fourth grade reading scores
+## ethnicity
+
+fourth_reading_race <- read_xlsx(path = "raw-data/fourth_reading_race.xlsx",
+                            skip = 8, n_max = 3189-8) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+  
+  clean_names() %>%
+    
+  # Remove NA observations
+  
+  filter(!is.na(year) & jurisdiction != "DoDEA" & jurisdiction != "District of Columbia") %>% 
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "fourth",
+         subject = "reading",
+         score = as.numeric(average_scale_score)) %>% 
+  
+  # Rename subgroup column name
+
+  rename(race = race_ethnicity_used_to_report_trends_school_reported) %>% 
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "race", "score")
+
+## Ethnicity
+
+fourth_reading_ethn <- read_xlsx(path = "raw-data/fourth_reading_ethn.xlsx",
+                         skip = 8, n_max = 3719-8) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+
+  clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year) & jurisdiction != "DoDEA" & jurisdiction != "District of Columbia") %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "fourth",
+         subject = "reading",
+         score = as.numeric(average_scale_score)) %>%  
+  
+  # Rename subgroup column name
+
+  rename(ethnicity = race_ethnicity_using_2011_guidelines_school_reported) %>% 
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "ethnicity", "score")
+
+## Gender
+
+fourth_reading_gender <- read_xlsx(path = "raw-data/fourth_reading_gender.xlsx",
+                            skip = 8, n_max = 1069-8) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+  
+  clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year) & jurisdiction != "DoDEA" & jurisdiction != "District of Columbia") %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "fourth",
+         subject = "reading",
+         score = as.numeric(average_scale_score)) %>%  
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "gender", "score")
+
+# Read in fourth grade math scores by state and year, keeping only
+# observation rows
+
+fourth_reading_lunch <- read_xlsx(path = "raw-data/fourth_reading_lunch.xlsx",
+                         skip = 8, n_max = 1599-8) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+
+  clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year) & jurisdiction != "DoDEA" & jurisdiction != "District of Columbia") %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "fourth",
+         subject = "reading",
+         score = as.numeric(average_scale_score)) %>%  
+  
+  # Rename subgroup column name
+  
+  rename(school_lunch = national_school_lunch_program_eligibility_3_categories) %>% 
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "school_lunch", "score")
+
+# Join fourth grade reading subgroup scores together so that each table is on 
+# top of each other
+
+fourth_reading_sub <- merge(fourth_reading_race, fourth_reading_gender, by = c("year", "jurisdiction", "grade", "subject",
+                                "score"), all = TRUE) %>% 
+  merge(., fourth_reading_lunch, by = c("year", "jurisdiction", "grade", "subject",
+                                "score"), all = TRUE) %>% 
+  filter(!is.na(score)) %>% 
+  select(-score, everything())
+```
+
+
+```{r}
+### Repeat above steps for subgroups in each grade and subject
+## Fourth grade math scores
+## ethnicity
+
+fourth_math_race <- read_xlsx(path = "raw-data/fourth_math_race.xlsx",
+                            skip = 8, n_max = 3189-8) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+  
+  clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year) & jurisdiction != "DoDEA" & jurisdiction != "District of Columbia") %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "fourth",
+         subject = "math",
+         score = as.numeric(average_scale_score)) %>% 
+  
+  # Rename subgroup column name
+
+  rename(race = race_ethnicity_used_to_report_trends_school_reported) %>% 
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "race", "score")
+
+## Ethnicity
+
+fourth_math_ethn <- read_xlsx(path = "raw-data/fourth_math_ethn.xlsx",
+                         skip = 8, n_max = 3719 - 8) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+
+  clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year) & jurisdiction != "DoDEA" & jurisdiction != "District of Columbia") %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "fourth",
+         subject = "math",
+         score = as.numeric(average_scale_score)) %>%  
+  
+  # Rename subgroup column name
+
+  rename(ethnicity = race_ethnicity_using_2011_guidelines_school_reported) %>% 
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "ethnicity", "score")
+
+## Gender
+
+fourth_math_gender <- read_xlsx(path = "raw-data/fourth_math_gender.xlsx",
+                            skip = 8, n_max = 1069-8) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+  
+  clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year) & jurisdiction != "DoDEA" & jurisdiction != "District of Columbia") %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "fourth",
+         subject = "math",
+         score = as.numeric(average_scale_score)) %>%  
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "gender", "score")
+
+# Read in fourth grade math scores by state and year, keeping only
+# observation rows
+
+fourth_math_lunch <- read_xlsx(path = "raw-data/fourth_math_lunch.xlsx",
+                         skip = 8, n_max = 1599-8) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+
+  clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year) & jurisdiction != "DoDEA" & jurisdiction != "District of Columbia") %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "fourth",
+         subject = "math",
+         score = as.numeric(average_scale_score)) %>%  
+  
+  # Rename subgroup column name
+  
+  rename(school_lunch = national_school_lunch_program_eligibility_3_categories) %>% 
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "school_lunch", "score")
+
+# Join fourth grade reading subgroup scores together so that each table is on 
+# top of each other
+
+fourth_math_sub <- merge(fourth_math_race, fourth_math_gender, by = c("year", "jurisdiction", "grade", "subject",
+                                "score"), all = TRUE) %>% 
+  merge(., fourth_math_lunch, by = c("year", "jurisdiction", "grade", "subject",
+                                "score"), all = TRUE) %>% 
+  filter(!is.na(score)) %>% 
+  select(-score, everything())
+```
+
+
+```{r}
+### Repeat above steps for subgroups in each grade and subject
+## Eighth grade reading scores
+## ethnicity
+
+eighth_reading_race <- read_xlsx(path = "raw-data/eighth_reading_race.xlsx",
+                            skip = 8, n_max = 3507-8) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+  
+  clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year) & jurisdiction != "DoDEA" & jurisdiction != "District of Columbia") %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "eighth",
+         subject = "reading",
+         score = as.numeric(average_scale_score)) %>% 
+  
+  # Rename subgroup column name
+
+  rename(race = race_ethnicity_used_to_report_trends_school_reported) %>% 
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "race", "score")
+
+## Ethnicity
+
+eighth_reading_ethn <- read_xlsx(path = "raw-data/eighth_reading_ethn.xlsx",
+                         skip = 8, n_max = 4090-8) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+
+  clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year) & jurisdiction != "DoDEA" & jurisdiction != "District of Columbia") %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "eighth",
+         subject = "reading",
+         score = as.numeric(average_scale_score)) %>%  
+  
+  # Rename subgroup column name
+
+  rename(ethnicity = race_ethnicity_using_2011_guidelines_school_reported) %>% 
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "ethnicity", "score")
+
+## Gender
+
+eighth_reading_gender <- read_xlsx(path = "raw-data/eighth_reading_gender.xlsx",
+                            skip = 8, n_max = 1175-8) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+  
+  clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year) & jurisdiction != "DoDEA" & jurisdiction != "District of Columbia") %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "eighth",
+         subject = "reading",
+         score = as.numeric(average_scale_score)) %>%  
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "gender", "score")
+
+## Lunch
+
+eighth_reading_lunch <- read_xlsx(path = "raw-data/eighth_reading_lunch.xlsx",
+                         skip = 8, n_max = 1758-8) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+
+  clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year) & jurisdiction != "DoDEA" & jurisdiction != "District of Columbia") %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "eighth",
+         subject = "reading",
+         score = as.numeric(average_scale_score)) %>%  
+  
+  # Rename subgroup column name
+  
+  rename(school_lunch = national_school_lunch_program_eligibility_3_categories) %>% 
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "school_lunch", "score")
+
+# Join fourth grade reading subgroup scores together so that each table is on 
+# top of each other
+
+eighth_reading_sub <- merge(eighth_reading_race, eighth_reading_gender, by = c("year", "jurisdiction", "grade", "subject",
+                                "score"), all = TRUE) %>% 
+  merge(., eighth_reading_lunch, by = c("year", "jurisdiction", "grade", "subject",
+                                "score"), all = TRUE) %>% 
+  filter(!is.na(score)) %>% 
+  select(-score, everything())
+```
+
+
+```{r}
+### Repeat above steps for subgroups in each grade and subject
+## Eighth grade math scores
+## ethnicity
+
+eighth_math_race <- read_xlsx(path = "raw-data/eighth_math_race.xlsx",
+                            skip = 8, n_max = 3189-8) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+  
+  clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year) & jurisdiction != "DoDEA" & jurisdiction != "District of Columbia") %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "eighth",
+         subject = "math",
+         score = as.numeric(average_scale_score)) %>% 
+  
+  # Rename subgroup column name
+
+  rename(race = race_ethnicity_used_to_report_trends_school_reported) %>% 
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "race", "score")
+
+## Ethnicity
+
+eighth_math_ethn <- read_xlsx(path = "raw-data/eighth_math_ethn.xlsx",
+                         skip = 8, n_max = 3719-8) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+
+  clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year) & jurisdiction != "DoDEA" & jurisdiction != "District of Columbia") %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "eighth",
+         subject = "math",
+         score = as.numeric(average_scale_score)) %>%  
+  
+  # Rename subgroup column name
+
+  rename(ethnicity = race_ethnicity_using_2011_guidelines_school_reported) %>% 
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "ethnicity", "score")
+
+## Gender
+
+eighth_math_gender <- read_xlsx(path = "raw-data/eighth_math_gender.xlsx",
+                            skip = 8, n_max = 1069-8) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+  
+  clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year) & jurisdiction != "DoDEA" & jurisdiction != "District of Columbia") %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "eighth",
+         subject = "math",
+         score = as.numeric(average_scale_score)) %>%  
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "gender", "score")
+
+# Read in fourth grade math scores by state and year, keeping only
+# observation rows
+
+eighth_math_lunch <- read_xlsx(path = "raw-data/eighth_math_lunch.xlsx",
+                         skip = 8, n_max = 1599-8) %>%
+  
+  # Make column names easy to use, so that there are no spaces
+
+  clean_names() %>%
+  
+  # Remove NA observations
+  
+  filter(!is.na(year) & jurisdiction != "DoDEA" & jurisdiction != "District of Columbia") %>%
+  
+  # Replace symbols with NA
+  
+  na_if(.,"‡") %>%
+  na_if(., "—") %>%
+  
+  # Create columns for grade and subjects
+  
+  mutate(grade = "eighth",
+         subject = "math",
+         score = as.numeric(average_scale_score)) %>%  
+  
+  # Rename subgroup column name
+  
+  rename(school_lunch = national_school_lunch_program_eligibility_3_categories) %>% 
+  
+  # Remove column with useless info and reorganize column so score is last
+  
+  select("year", "jurisdiction", "grade", "subject", "school_lunch", "score")
+
+# Join fourth grade reading subgroup scores together so that each table is on 
+# top of each other
+
+eighth_math_sub <- merge(eighth_math_gender, eighth_math_race,
+                         by = c("year", "jurisdiction", "grade",
+                                "subject", "score"), all = TRUE) %>%
+  merge(., eighth_math_lunch, by = c("year", "jurisdiction", "grade",
+                                "subject", "score"), all = TRUE) %>%
+  filter(!is.na(score)) %>% 
+  select(-score, everything())
+
+```
+
+```{r, echo = FALSE}
+# Join fourth grade reading and math scores together so that each table is on 
+# top of each other
+fourth_sub <- fourth_reading_sub %>% 
+  merge(., fourth_math_sub, by = c("year", "jurisdiction", "grade", "subject",
+                                "score", "race", "gender",
+                                "school_lunch"), all = TRUE)
+
+# Join eighth grade reading and math scores together so that each table is on 
+# top of each other
+
+eighth_sub <- eighth_reading_sub %>% 
+  merge(., eighth_math_sub, by = c("year", "jurisdiction", "grade", "subject",
+                                "score", "race", "gender",
+                                "school_lunch"), all = TRUE)
+
+# Join eighth grade and fourth grade scores together so that all tables are on 
+# top of each other
+
+naep_sub <- fourth_sub %>% 
+  merge(., eighth_sub,  by = c("year", "jurisdiction", "grade", "subject",
+                                "score", "race", "gender",
+                                "school_lunch"), all = TRUE) %>%
+  mutate(test_type = case_when(grade == "fourth" &
+                                 subject == "reading" ~ "fourth reading",
+                               grade == "fourth" &
+                                 subject == "math" ~ "fourth math",
+                               grade == "eighth" &
+                                 subject == "reading" ~ "eighth reading",
+                               grade == "eighth" &
+                                 subject == "math" ~ "eighth math")) %>% 
+  select(-score, everything()) %>% 
+  mutate(cc_implementation = case_when(jurisdiction == "Alabama" ~ 2013,
+                             jurisdiction == "Arizona" ~ 2013,
+                             jurisdiction == "Arkansas" ~ 2013,
+                             jurisdiction == "California" ~ 2014,
+                             jurisdiction == "Colorado" ~ 2013,
+                             jurisdiction == "Connecticut" ~ 2013,
+                             jurisdiction == "Delaware" ~ 2012,
+                             jurisdiction == "Georgia" ~ 2014,
+                             jurisdiction == "Hawaii" ~ 2013,
+                             jurisdiction == "Idaho" ~ 2013,
+                             jurisdiction == "Illinois" ~ 2013,
+                             jurisdiction == "Iowa" ~ 2012,
+                             jurisdiction == "Kansas" ~ 2013,
+                             jurisdiction == "Kentucky" ~ 2011,
+                             jurisdiction == "Louisiana" ~ 2013,
+                             jurisdiction == "Maine" ~ 2012,
+                             jurisdiction == "Maryland" ~ 2013,
+                             jurisdiction == "Massachusetts" ~ 2013,
+                             jurisdiction == "Michigan" ~ 2012,
+                             jurisdiction == "Mississippi" ~ 2013,
+                             jurisdiction == "Missouri" ~ 2014,
+                             jurisdiction == "Montana" ~ 2013,
+                             jurisdiction == "New Hampshire" ~ 2014,
+                             jurisdiction == "New Jersey" ~ 2013,
+                             jurisdiction == "New Mexico" ~ 2013,
+                             jurisdiction == "New York" ~ 2013,
+                             jurisdiction == "North Carolina" ~ 2012,
+                             jurisdiction == "North Dakota" ~ 2013,
+                             jurisdiction == "Ohio" ~ 2013,
+                             jurisdiction == "Oregon" ~ 2014,
+                             jurisdiction == "Pennsylvania" ~ 2013,
+                             jurisdiction == "Rhode Island" ~ 2013,
+                             jurisdiction == "South Dakota" ~ 2014,
+                             jurisdiction == "Tennessee" ~ 2013,
+                             jurisdiction == "Utah" ~ 2013,
+                             jurisdiction == "Vermont" ~ 2013,
+                             jurisdiction == "Washington" ~ 2014,
+                             jurisdiction == "West Virginia" ~ 2014,
+                             jurisdiction == "Wisconsin" ~ 2013,
+                             jurisdiction == "Wyoming" ~ 2014),
+         treat_year = ifelse(year < cc_implementation, 0, 1),
+         treat_year = replace_na(treat_year, 0),
+         non_white = ifelse(race == "White", 0, 1),
+         black = ifelse(race == "Black", 1, 0),
+         asian = ifelse(race == "Asian/Pacific Islander", 1, 0),
+         hispanic = ifelse(race == "Hispanic", 1, 0),
+         female = ifelse(gender == "female", 1, 0),
+         low_income = ifelse(school_lunch == "Eligible", 1, 0),
+         test_type = case_when(test_type == "fourth reading" ~ "Fourth Grade Reading",
+                               test_type == "eighth reading" ~ "Eighth Grade Reading",
+                               test_type == "fourth math" ~ "Fourth Grade Math",
+                               test_type == "eighth math" ~ "Eighth Grade Math"))
+```
+
+```{r}
+## Save datasets into a single file, replacing old files saved 
+write_xlsx(naep_sub, path = "shiny/naep_sub.xlsx")
+write_xlsx(naep, path = "shiny/naep.xlsx")
+```
+
+
+
+## Background
+The goal of this project is to determine how implementation of the Common Core
+Standards (CSS) in the early 2010s affected achievement relative across states
+relative to states that did not implement the CSS. The goal of the curriculum
+standardization is to narrow achievement gaps; however, there is debate over
+whether the Common Core actually achieved this goal as well as concern over
+states simply adjusting their state standardized tests to allow for teachers' 
+teaching to the test. To avoid this bias, I am using National Assessment of 
+Educational Progress (NAEP) data, which includes average student test scores by
+states on national standardized exams.
+
+## Data
+The data from this project is from http://www.corestandards.org and 
+nationsreportcard.gov, which respectively have data on dates regarding CSS
+adoption and implementation across states and data on test scores by state and
+year for fourth and eighth grade NAEP scores as well as by subcategory (e.g.
+race, gender, school lunch program eligibility). School lunch eligibility is 
+used as a proxy for low-income, since income levels are not reported/provided.
+
+## Methodology
+This project examines NAEP score trends across states, by race, gender, and 
+income in order to determine how implementation of the CSS impacted
+standardized exam scores for students overall and how the program impacted
+achievement gaps. The project conducts an event-study design regressing
+each average test score by state, subject, and grade against the nine
+states that chose not to implement the CSS as controls. 
